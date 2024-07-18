@@ -11,7 +11,6 @@
         <module name="discovery" />
         <module name="gateway" />
         <module name="ms-user-management" />
-
       </profile>
     </annotationProcessing>
   </component>
@@ -19,6 +18,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="config-server" options="-parameters" />
       <module name="discovery" options="-parameters" />
+      <module name="gateway" options="-parameters" />
       <module name="ms-user-management" options="-parameters" />
     </option>
   </component>
