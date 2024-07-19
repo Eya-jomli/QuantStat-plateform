@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: user-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/shared_db
+    username: quants_db
+    password: admin
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: kardounmolka@gmail.com
+    password: htay umad vgxt hdzc
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+server:
+  port: 8085
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+jwt:
+  secret: 9faa95dfrgaddf55gg5s555qe55fq54rr9ezassaleehlaad4556777hhzaazaze
+
+logging:
+  level:
+    org:
+      springframework:
+        security: DEBUG
