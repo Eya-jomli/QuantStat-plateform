@@ -61,6 +61,10 @@ public class User {
     private Set<Role> roles = new HashSet<>();
 
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_devices", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "device_id")
+    private Set<String> deviceIds = new HashSet<>();
 
     public User(String username, String firstName, String lastName, String phoneNumber, String email, String password) {
         this.username = username;

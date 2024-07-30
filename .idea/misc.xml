@@ -8,6 +8,7 @@
         <option value="$PROJECT_DIR$/config-server/pom.xml" />
         <option value="$PROJECT_DIR$/gateway/pom.xml" />
         <option value="$PROJECT_DIR$/ms-user-management/pom.xml" />
+        <option value="$PROJECT_DIR$/match-management/pom.xml" />
       </list>
     </option>
   </component>

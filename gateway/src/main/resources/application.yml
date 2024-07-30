@@ -1,0 +1,27 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  config:
+    import: optional:configserver:http://localhost:8888
+  main:
+    web-application-type: reactive  # Add this line
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    enabled: false
+  instance:
+    prefer-ip-address: true
+
+zuul:
+  routes:
+    user-service:
+      path: /api-users/**
+      service-id: user-service
+    match-management-service:
+      path: /api-matches/**
+      service-id: match-management-service

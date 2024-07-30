@@ -13,32 +13,66 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   config-server:
-    image: your-config-server-image
     build:
       context: ./config-server
     ports:
       - "8888:8888"
     depends_on:
       - postgres
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
 
   discovery-server:
-    image: your-discovery-server-image
     build:
-      context: ./discovery-server
+      context: ./discovery
     ports:
       - "8761:8761"
     depends_on:
-      - postgres
       - config-server
+      - postgres
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://localhost:8761/eureka/
 
   api-gateway:
-    image: your-api-gateway-image
     build:
-      context: ./api-gateway
+      context: ./gateway
     ports:
       - "8080:8080"
     depends_on:
       - discovery-server
+      - config-server
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+
+  match-management:
+    build:
+      context: ./match-management
+    ports:
+      - "8086:8086"
+    depends_on:
+      - discovery-server
+      - config-server
+      - postgres
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/shared_db
+      - SPRING_DATASOURCE_USERNAME=quants_db
+      - SPRING_DATASOURCE_PASSWORD=admin
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+
+  ms-user-management:
+    build:
+      context: ./ms-user-management
+    ports:
+      - "8085:8085"
+    depends_on:
+      - discovery-server
+      - config-server
+      - postgres
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/shared_db
+      - SPRING_DATASOURCE_USERNAME=quants_db
+      - SPRING_DATASOURCE_PASSWORD=admin
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
 
 volumes:
   postgres_data:

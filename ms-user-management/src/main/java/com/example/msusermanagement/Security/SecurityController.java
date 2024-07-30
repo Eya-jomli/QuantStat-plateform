@@ -9,11 +9,13 @@ import com.example.msusermanagement.Repositories.RoleRepository;
 import com.example.msusermanagement.Repositories.UserRepository;
 import com.example.msusermanagement.Services.EmailService;
 import com.example.msusermanagement.error.BadRequestException;
+import com.example.msusermanagement.error.LoginException;
 import com.example.msusermanagement.payload.request.SignupRequest;
 import com.example.msusermanagement.payload.response.MessageResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -61,17 +63,17 @@ public class SecurityController {
     private PasswordEncoder encoder;
 
     @PostMapping("/reset-password")
-    private String resetPassword(@RequestParam String confirmationKey, @RequestParam String newPassword){
+    private String resetPassword(@RequestParam String confirmationKey, @RequestParam String newPassword) {
         this.checkIfConfirmationKeyIsValid(confirmationKey);
         return this.resetPasswordAndDeleteConfirmationKey(confirmationKey, newPassword);
     }
 
-    private void checkIfConfirmationKeyIsValid(String confirmationKey){
-        if(!this.confirmationKeyRepo.existsByConfirmationKey(confirmationKey))
+    private void checkIfConfirmationKeyIsValid(String confirmationKey) {
+        if (!this.confirmationKeyRepo.existsByConfirmationKey(confirmationKey))
             throw new BadRequestException("ConfirmationKey invalid");
     }
 
-    private String resetPasswordAndDeleteConfirmationKey(String confirmationKey, String newPassword){
+    private String resetPasswordAndDeleteConfirmationKey(String confirmationKey, String newPassword) {
         ConfirmationKey confirmationKey1 = this.confirmationKeyRepo.findByConfirmationKey(confirmationKey).get();
         User user = this.userRepository.findByEmail(confirmationKey1.getEmailAddress()).get();
         user.setPassword(this.encoder.encode(newPassword));
@@ -89,11 +91,11 @@ public class SecurityController {
             throw new BadRequestException("We have already sent an email to reset your password");
         }
         final var key = UUID.randomUUID().toString();
-        SimpleMailMessage simpleMailMessage=new SimpleMailMessage();
+        SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
         simpleMailMessage.setTo(emailAddress);
         simpleMailMessage.setSubject("Password reset");
         simpleMailMessage.setFrom("clasherwin59@gmail.com");
-        simpleMailMessage.setText("To change your password add this confirmation Key : " +key);
+        simpleMailMessage.setText("To change your password add this confirmation Key : " + key);
         emailService.send(simpleMailMessage);
         return this.generateAndPersistConfirmationKey(emailAddress, key);
     }
@@ -108,40 +110,82 @@ public class SecurityController {
     }
 
 
-
     @GetMapping("/profile")
     public Authentication authentication(Authentication authentication) {
         return authentication;
     }
 
     @PostMapping("/login")
-    public Map<String, String> login(@RequestParam String username, @RequestParam String password) {
-        log.info("helooooooooooooooooo");
-        log.info(username);
-        log.info(password);
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, password)
-        );
+    public Map<String, String> login(@RequestParam String username, @RequestParam String password, @RequestParam String deviceId) {
+        log.info("Attempting to log in with username: " + username + " and deviceId: " + deviceId);
 
-        Instant instant = Instant.now();
-        String scope = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority).collect(Collectors.joining(" "));
-        JwtClaimsSet jwtClaimsSet = JwtClaimsSet.builder()
-                .issuedAt(Instant.now())
-                .expiresAt(Instant.now().plus(120, ChronoUnit.MINUTES))
-                .subject(username)
-                .claim("scope", scope)
-                .build();
-        JwtEncoderParameters jwtEncoderParameters =
-                JwtEncoderParameters.from(
-                        JwsHeader.with(MacAlgorithm.HS512).build(),
-                        jwtClaimsSet
-                );
-        String jwt = jwtEncoder.encode(jwtEncoderParameters).getTokenValue();
-        //return Map.of("accessToken", jwt);
-        return Map.of("accessToken", jwt, "role", scope);
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new LoginException("User not found."));
 
+        // Définir la limite du nombre d'appareils
+        int maxDevices = 3;
 
+        if (user.getDeviceIds().isEmpty() || user.getDeviceIds().contains(deviceId)) {
+            user.getDeviceIds().add(deviceId);
+            userRepository.save(user);
+        } else if (user.getDeviceIds().size() >= maxDevices) {
+            throw new LoginException("You have reached the maximum number of devices. Please request a reset.");
+        } else {
+            user.getDeviceIds().add(deviceId);
+            userRepository.save(user);
+        }
+
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(username, password)
+            );
+
+            Instant instant = Instant.now();
+            String scope = authentication.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority).collect(Collectors.joining(" "));
+            JwtClaimsSet jwtClaimsSet = JwtClaimsSet.builder()
+                    .issuedAt(Instant.now())
+                    .expiresAt(Instant.now().plus(120, ChronoUnit.MINUTES))
+                    .subject(username)
+                    .claim("scope", scope)
+                    .build();
+            JwtEncoderParameters jwtEncoderParameters =
+                    JwtEncoderParameters.from(
+                            JwsHeader.with(MacAlgorithm.HS512).build(),
+                            jwtClaimsSet
+                    );
+            String jwt = jwtEncoder.encode(jwtEncoderParameters).getTokenValue();
+
+            return Map.of("accessToken", jwt, "role", scope);
+        } catch (Exception e) {
+            throw new LoginException("Invalid username or password.");
+        }
+    }
+
+    @PostMapping("/request-reset")
+    public ResponseEntity<?> requestDeviceReset(@RequestParam String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found."));
+
+        // Envoyer un email à l'administrateur ou déclencher une action pour réinitialiser les appareils
+        SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
+        simpleMailMessage.setTo("ibtihel.benmustapha@esprit.tn");
+        simpleMailMessage.setSubject("Device Reset Request");
+        simpleMailMessage.setText("User " + username + " has requested to reset their device IDs.");
+        emailService.send(simpleMailMessage);
+
+        return ResponseEntity.ok(new MessageResponse("Device reset request has been sent."));
+    }
+
+    @PostMapping("/reset-devices")
+    public ResponseEntity<?> resetDevices(@RequestParam String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found."));
+
+        user.getDeviceIds().clear();
+        userRepository.save(user);
+
+        return ResponseEntity.ok(new MessageResponse("Device IDs have been reset."));
     }
 
 
@@ -194,7 +238,6 @@ public class SecurityController {
                                 .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
                         roles.add(scouterRole);
                         break;
-
 
 
                     case "analyst":
