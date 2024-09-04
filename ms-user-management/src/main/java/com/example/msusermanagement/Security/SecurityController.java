@@ -39,7 +39,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/user/auth")
 @Slf4j
 public class SecurityController {
     /////autheeentication

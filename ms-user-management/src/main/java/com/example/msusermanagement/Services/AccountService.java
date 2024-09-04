@@ -20,5 +20,6 @@ public interface AccountService {
     String editProfile(String userName, EditProfileRequest editProfileRequest);
 
     String updatePassword(String userName, UpdatePasswordRequest updatePasswordRequest);
+    User getPrincipalByUsername(String username);
 
 }

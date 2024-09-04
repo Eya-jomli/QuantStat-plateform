@@ -10,10 +10,6 @@ import lombok.*;
 
 import java.util.HashSet;
 import java.util.Set;
-/*import javax.validation.Validator.*;
-import jakarta.validation.constraints.Email;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;*/
 
 @Entity
 @Table(	name = "users",
@@ -44,7 +40,7 @@ public class User {
     private Boolean disabled = false;
 
     private String discount;
-
+    private Boolean hasSubscription = false;
     @NotBlank
     @Size(max = 50)
     @Email
@@ -66,6 +62,8 @@ public class User {
     @Column(name = "device_id")
     private Set<String> deviceIds = new HashSet<>();
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Subscription> subscriptions = new HashSet<>();
     public User(String username, String firstName, String lastName, String phoneNumber, String email, String password) {
         this.username = username;
         this.firstName = firstName;

@@ -70,6 +70,12 @@ public class AccountServiceImpl implements AccountService {
         if (this.userRepository.existsByEmail(emailAddress))
             throw new BadRequestException("Email address already in use");
     }
+    @Override
+    public User getPrincipalByUsername(String username) {
+        return this.userRepository.findByUsername(username)
+                .orElseThrow(() -> new BadRequestException("User not found"));
+    }
+
 
 
 }

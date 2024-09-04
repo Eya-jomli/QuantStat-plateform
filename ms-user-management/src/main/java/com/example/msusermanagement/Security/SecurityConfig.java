@@ -57,7 +57,7 @@ public class SecurityConfig {
                 .sessionManagement(sm->sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .csrf(csrf->csrf.disable())
                 .cors(Customizer.withDefaults())
-                .authorizeHttpRequests(ar->ar.requestMatchers("/auth/**","/post/getimage/**").permitAll())
+                .authorizeHttpRequests(ar->ar.requestMatchers("/user/auth/**","/post/getimage/**","/user/packs/**").permitAll())
                 .authorizeHttpRequests(ar->ar.anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())
                 .oauth2ResourceServer(oa->oa.jwt(Customizer.withDefaults()))

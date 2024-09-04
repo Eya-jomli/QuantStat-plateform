@@ -1,6 +1,7 @@
 package com.example.msusermanagement.Controllers;
 
 import com.example.msusermanagement.Entities.AccountStatusStats;
+import com.example.msusermanagement.Entities.User;
 import com.example.msusermanagement.Services.AccountService;
 import com.example.msusermanagement.payload.request.EditProfileRequest;
 import com.example.msusermanagement.payload.request.UpdatePasswordRequest;
@@ -13,7 +14,7 @@ import java.security.Principal;
 import java.util.List;
 
 @RestController
-@RequestMapping("/account")
+@RequestMapping("/user/account")
 public class AccountController {
     @Autowired
     AccountService accountService;
@@ -48,6 +49,10 @@ public class AccountController {
         return this.accountService.updatePassword(principal.getName(), updatePasswordRequest);
     }
 
-
+    @GetMapping("/profile/{username}")
+    public UserDTO getPrincipalByUsername(@PathVariable String username) {
+        User user = this.accountService.getPrincipalByUsername(username);
+        return new UserDTO(user);
+    }
 
 }
